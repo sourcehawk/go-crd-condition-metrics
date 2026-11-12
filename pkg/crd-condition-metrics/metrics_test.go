@@ -19,7 +19,8 @@ func makeObj(name, namespace string) *FakeObject {
 }
 
 const (
-	kind = "MyCRD"
+	kind       = "MyCRD"
+	controller = "my-controller"
 )
 
 func TestConditionMetricRecorder_RecordConditionFor(t *testing.T) {
@@ -29,7 +30,7 @@ func TestConditionMetricRecorder_RecordConditionFor(t *testing.T) {
 
 	// Arrange
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 	name := "cr-1"
@@ -75,7 +76,7 @@ func TestConditionMetricRecorder_RecordConditionFor_WithExtraLabels(t *testing.T
 
 	// Arrange
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 	name := "cr-1"
@@ -118,7 +119,7 @@ func TestConditionMetricRecorder_RemoveConditionsFor(t *testing.T) {
 	_ = reg.Register(gauge)
 	// Arrange
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 	name := "cr-2"
@@ -147,7 +148,7 @@ func TestConditionMetricRecorder_SetsKindLabelFromObject(t *testing.T) {
 	gauge := NewOperatorConditionsGauge("test_sets_kind_label_from_object")
 	reg := prometheus.NewRegistry()
 	_ = reg.Register(gauge)
-	ctrl := "my-controller"
+	ctrl := controller
 	rec := &ConditionMetricRecorder{
 		Controller:              ctrl,
 		OperatorConditionsGauge: gauge,
