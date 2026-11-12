@@ -3,5 +3,38 @@
   "extends": [
     "config:recommended"
   ],
-  "ignorePaths": []
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "schedule": ["* * 1,15 * *"]
+    },
+    {
+      "matchFileNames": [".tool-versions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "tool-versions"
+    },
+    {
+      "description": "client_golang requires matching versions of client_model and common, so the three update together.",
+      "matchPackageNames": [
+        "github.com/prometheus/client_golang",
+        "github.com/prometheus/client_model",
+        "github.com/prometheus/common"
+      ],
+      "groupName": "prometheus-go-libraries"
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Update versions in CI workflows that carry a '# renovate:' comment on the line above.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: '?(?<currentValue>[^'\\s]+)'?"
+      ],
+      "extractVersionTemplate": "^v?(?<version>.+)$"
+    }
+  ]
 }

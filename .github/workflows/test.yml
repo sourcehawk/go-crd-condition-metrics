@@ -15,7 +15,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.x'
+          go-version-file: .tool-versions
 
       # Version comes from .tool-versions so CI and local asdf installs cannot
       # drift apart, and renovate keeps a single place up to date.
@@ -30,10 +30,12 @@ jobs:
         run: make all
 
       # promtool is not part of `make all` so that contributors without it can
-      # still run the Go test suite. Bump PROMETHEUS_VERSION by hand.
+      # still run the Go test suite. Renovate updates PROMETHEUS_VERSION through
+      # the custom manager in renovate.json.
       - name: Install promtool
         env:
-          PROMETHEUS_VERSION: '3.4.1'
+          # renovate: datasource=github-releases depName=prometheus/prometheus
+          PROMETHEUS_VERSION: '3.16.0'
         run: |
           mkdir -p "$HOME/.local/bin"
           curl -sSfL "https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz" \
