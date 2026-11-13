@@ -10,35 +10,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
-          go-version: '1.25.x'
+          go-version-file: .tool-versions
 
-      # Version comes from .tool-versions so CI and local asdf installs cannot
+      - name: Setup asdf
+        uses: asdf-vm/actions/setup@v4
+
+      # Versions come from .tool-versions so CI and local asdf installs cannot
       # drift apart, and renovate keeps a single place up to date.
-      - name: Install golangci-lint
+      # asdf-vm/actions/install installs every tool in .tool-versions, so it
+      # would install Go again on top of setup-go.
+      - name: Install tools with asdf
         run: |
-          version=$(awk '$1 == "golangci-lint" { print $2; exit }' .tool-versions)
-          echo "Installing golangci-lint v$version"
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
-          | sh -s -- -b "$(go env GOPATH)/bin" "v$version"
+          for tool in golangci-lint promtool; do
+            asdf plugin add "$tool"
+            asdf install "$tool"
+          done
 
       - name: Test
         run: make all
 
       # promtool is not part of `make all` so that contributors without it can
-      # still run the Go test suite. Bump PROMETHEUS_VERSION by hand.
-      - name: Install promtool
-        env:
-          PROMETHEUS_VERSION: '3.4.1'
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -sSfL "https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz" \
-          | tar -xz --strip-components=1 -C "$HOME/.local/bin" "prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
+      # still run the Go test suite.
       - name: Test alerts
         run: make test-alerts

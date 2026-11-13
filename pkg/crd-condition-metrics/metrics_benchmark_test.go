@@ -61,7 +61,7 @@ func createBenchmarkScenario(tb testing.TB, registry *prometheus.Registry) *Cond
 	})
 
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 
