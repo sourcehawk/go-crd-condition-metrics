@@ -17,14 +17,19 @@ jobs:
         with:
           go-version-file: .tool-versions
 
+      - name: Setup asdf
+        uses: asdf-vm/actions/setup@v4
+
       # Versions come from .tool-versions so CI and local asdf installs cannot
       # drift apart, and renovate keeps a single place up to date.
+      # asdf-vm/actions/install installs every tool in .tool-versions, so it
+      # would install Go again on top of setup-go.
       - name: Install tools with asdf
-        uses: asdf-vm/actions/install@v4
-        with:
-          only: |
-            golangci-lint
-            promtool
+        run: |
+          for tool in golangci-lint promtool; do
+            asdf plugin add "$tool"
+            asdf install "$tool"
+          done
 
       - name: Test
         run: make all
