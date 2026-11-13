@@ -3,5 +3,39 @@
   "extends": [
     "config:recommended"
   ],
-  "ignorePaths": []
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "schedule": ["* * 1,15 * *"]
+    },
+    {
+      "matchFileNames": [".tool-versions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "tool-versions"
+    },
+    {
+      "description": "client_golang requires matching versions of client_model and common, so the three update together.",
+      "matchPackageNames": [
+        "github.com/prometheus/client_golang",
+        "github.com/prometheus/client_model",
+        "github.com/prometheus/common"
+      ],
+      "groupName": "prometheus-go-libraries"
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "The asdf manager does not know promtool. The asdf-promtool plugin installs the prometheus release of the same version.",
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)\\.tool-versions$/"],
+      "matchStrings": ["(^|\\n)promtool (?<currentValue>\\S+)"],
+      "depNameTemplate": "promtool",
+      "packageNameTemplate": "prometheus/prometheus",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ]
 }
