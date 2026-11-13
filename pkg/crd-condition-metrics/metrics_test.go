@@ -112,6 +112,22 @@ test_record_transition_and_second_condition_controller_condition{condition="Sync
 	assert.Equal(t, 2, removed)
 }
 
+func TestConditionMetricRecorder_RecordConditionFor_WrongExtraValueCountPanics(t *testing.T) {
+	gauge := NewOperatorConditionsGauge("test_record_wrong_extra_value_count", "zz_extra")
+	rec := &ConditionMetricRecorder{
+		Controller:              "my-controller",
+		OperatorConditionsGauge: gauge,
+	}
+	obj := makeObj("cr-5", "prod")
+
+	assert.Panics(t, func() {
+		rec.RecordConditionFor(kind, obj, "Ready", "True", "", time.Now())
+	})
+	assert.Panics(t, func() {
+		rec.RecordConditionFor(kind, obj, "Ready", "True", "", time.Now(), "a", "b")
+	})
+}
+
 func TestConditionMetricRecorder_RemoveConditionsFor(t *testing.T) {
 	gauge := NewOperatorConditionsGauge("test_remove_conditions_for_condition")
 	reg := prometheus.NewRegistry()
@@ -141,6 +157,59 @@ func TestConditionMetricRecorder_RemoveConditionsFor(t *testing.T) {
 			"test_remove_conditions_for_condition_controller_condition",
 		),
 	)
+}
+
+func TestConditionMetricRecorder_RemoveConditionsFor_UnknownObjectRemovesNothing(t *testing.T) {
+	gauge := NewOperatorConditionsGauge("test_remove_conditions_for_unknown_object")
+	rec := &ConditionMetricRecorder{
+		Controller:              "my-controller",
+		OperatorConditionsGauge: gauge,
+	}
+
+	assert.Equal(t, 0, rec.RemoveConditionsFor(kind, makeObj("never-recorded", "default")))
+}
+
+func TestConditionMetricRecorder_RemoveConditionFor_KeepsOtherConditionTypes(t *testing.T) {
+	gauge := NewOperatorConditionsGauge("test_remove_condition_for_keeps_others")
+	reg := prometheus.NewRegistry()
+	_ = reg.Register(gauge)
+	rec := &ConditionMetricRecorder{
+		Controller:              "my-controller",
+		OperatorConditionsGauge: gauge,
+	}
+	transitionTime := time.Date(2025, time.January, 1, 0, 0, 0, 0, time.UTC)
+	obj := makeObj("cr-3", "staging")
+
+	rec.RecordConditionFor(kind, obj, "Ready", "True", "", transitionTime)
+	rec.RecordConditionFor(kind, obj, "Synchronized", "False", "SyncPending", transitionTime)
+
+	assert.Equal(t, 1, rec.RemoveConditionFor(kind, obj, "Synchronized"))
+
+	want := `
+# HELP test_remove_condition_for_keeps_others_controller_condition Condition status for a custom resource; one time series per (custom resource, condition type) combination.
+# TYPE test_remove_condition_for_keeps_others_controller_condition gauge
+test_remove_condition_for_keeps_others_controller_condition{condition="Ready",controller="my-controller",id="staging/cr-3",kind="MyCRD",name="cr-3",namespace="staging",reason="",status="True"} 1735689600
+`
+	require.NoError(t,
+		testutil.GatherAndCompare(
+			reg,
+			strings.NewReader(want),
+			"test_remove_condition_for_keeps_others_controller_condition",
+		),
+	)
+}
+
+func TestConditionMetricRecorder_RemoveConditionFor_UnknownConditionRemovesNothing(t *testing.T) {
+	gauge := NewOperatorConditionsGauge("test_remove_condition_for_unknown_condition")
+	rec := &ConditionMetricRecorder{
+		Controller:              "my-controller",
+		OperatorConditionsGauge: gauge,
+	}
+	obj := makeObj("cr-4", "staging")
+	rec.RecordConditionFor(kind, obj, "Ready", "True", "", time.Now())
+
+	assert.Equal(t, 0, rec.RemoveConditionFor(kind, obj, "Synchronized"))
+	assert.Equal(t, 0, rec.RemoveConditionFor(kind, makeObj("never-recorded", "staging"), "Ready"))
 }
 
 func TestConditionMetricRecorder_SetsKindLabelFromObject(t *testing.T) {
