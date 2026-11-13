@@ -116,7 +116,7 @@ test_record_transition_and_second_condition_controller_condition{condition="Sync
 func TestConditionMetricRecorder_RecordConditionFor_WrongExtraValueCountPanics(t *testing.T) {
 	gauge := NewOperatorConditionsGauge("test_record_wrong_extra_value_count", "zz_extra")
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 	obj := makeObj("cr-5", "prod")
@@ -163,7 +163,7 @@ func TestConditionMetricRecorder_RemoveConditionsFor(t *testing.T) {
 func TestConditionMetricRecorder_RemoveConditionsFor_UnknownObjectRemovesNothing(t *testing.T) {
 	gauge := NewOperatorConditionsGauge("test_remove_conditions_for_unknown_object")
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 
@@ -175,7 +175,7 @@ func TestConditionMetricRecorder_RemoveConditionFor_KeepsOtherConditionTypes(t *
 	reg := prometheus.NewRegistry()
 	_ = reg.Register(gauge)
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 	transitionTime := time.Date(2025, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -203,7 +203,7 @@ test_remove_condition_for_keeps_others_controller_condition{condition="Ready",co
 func TestConditionMetricRecorder_RemoveConditionFor_UnknownConditionRemovesNothing(t *testing.T) {
 	gauge := NewOperatorConditionsGauge("test_remove_condition_for_unknown_condition")
 	rec := &ConditionMetricRecorder{
-		Controller:              "my-controller",
+		Controller:              controller,
 		OperatorConditionsGauge: gauge,
 	}
 	obj := makeObj("cr-4", "staging")
