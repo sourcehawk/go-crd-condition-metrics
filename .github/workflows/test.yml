@@ -10,37 +10,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: .tool-versions
 
-      # Version comes from .tool-versions so CI and local asdf installs cannot
+      # Versions come from .tool-versions so CI and local asdf installs cannot
       # drift apart, and renovate keeps a single place up to date.
-      - name: Install golangci-lint
-        run: |
-          version=$(awk '$1 == "golangci-lint" { print $2; exit }' .tool-versions)
-          echo "Installing golangci-lint v$version"
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
-          | sh -s -- -b "$(go env GOPATH)/bin" "v$version"
+      - name: Install tools with asdf
+        uses: asdf-vm/actions/install@v4
+        with:
+          only: |
+            golangci-lint
+            promtool
 
       - name: Test
         run: make all
 
       # promtool is not part of `make all` so that contributors without it can
-      # still run the Go test suite. Renovate updates PROMETHEUS_VERSION through
-      # the custom manager in renovate.json.
-      - name: Install promtool
-        env:
-          # renovate: datasource=github-releases depName=prometheus/prometheus
-          PROMETHEUS_VERSION: '3.16.0'
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -sSfL "https://github.com/prometheus/prometheus/releases/download/v$PROMETHEUS_VERSION/prometheus-$PROMETHEUS_VERSION.linux-amd64.tar.gz" \
-          | tar -xz --strip-components=1 -C "$HOME/.local/bin" "prometheus-$PROMETHEUS_VERSION.linux-amd64/promtool"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
+      # still run the Go test suite.
       - name: Test alerts
         run: make test-alerts

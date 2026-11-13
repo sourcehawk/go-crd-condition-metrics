@@ -28,13 +28,14 @@
   ],
   "customManagers": [
     {
-      "description": "Update versions in CI workflows that carry a '# renovate:' comment on the line above.",
+      "description": "The asdf manager does not know promtool. The asdf-promtool plugin installs the prometheus release of the same version.",
       "customType": "regex",
-      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: '?(?<currentValue>[^'\\s]+)'?"
-      ],
-      "extractVersionTemplate": "^v?(?<version>.+)$"
+      "managerFilePatterns": ["/(^|/)\\.tool-versions$/"],
+      "matchStrings": ["(^|\\n)promtool (?<currentValue>\\S+)"],
+      "depNameTemplate": "promtool",
+      "packageNameTemplate": "prometheus/prometheus",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
     }
   ]
 }
