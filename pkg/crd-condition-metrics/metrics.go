@@ -80,6 +80,9 @@ type ConditionMetricRecorder struct {
 //
 // If the last transition time is zero, the value of the metric is set to the unix timestamp for time.Now().UTC()
 //
+// Pass one extraLabelValues entry for each extra label given to NewOperatorConditionsGauge, in the same order.
+// A different number of values panics.
+//
 // Example:
 //
 //	c := metav1.Condition{
@@ -108,11 +111,22 @@ func (r *ConditionMetricRecorder) RecordConditionFor(
 	r.OperatorConditionsGauge.SetGroup(float64(lastTransitionTime.Unix()), indexValues, groupValues, extraValues...)
 }
 
-// RemoveConditionsFor deletes all condition metrics for a given resource.
-// This removes all condition types (e.g., Ready, Reconciled) for the resource in one call.
+// RemoveConditionsFor deletes the series of every condition type that this controller recorded for the
+// resource. Call it when the Get of the resource returns NotFound. If you call it while the resource still
+// exists, a later reconcile records the conditions again.
 //
-// Typically called when the object is deleted or no longer relevant to the controller (Deletion reconcile).
-// Returns the number of time series deleted.
+// Returns the number of series deleted, which is 0 when nothing was recorded for the resource.
 func (r *ConditionMetricRecorder) RemoveConditionsFor(kind string, object ObjectLike) (removed int) {
 	return r.OperatorConditionsGauge.DeleteByIndex(r.Controller, kind, object.GetName(), object.GetNamespace())
+}
+
+// RemoveConditionFor deletes the series of one condition type that this controller recorded for the
+// resource, and keeps the series of its other condition types. Call it when you remove the condition from
+// the status, for example with meta.RemoveStatusCondition.
+//
+// Returns the number of series deleted, which is 0 when nothing was recorded for that condition type.
+func (r *ConditionMetricRecorder) RemoveConditionFor(kind string, object ObjectLike, conditionType string) (removed int) {
+	return r.OperatorConditionsGauge.DeleteByGroup(
+		[]string{r.Controller, kind, object.GetName(), object.GetNamespace()}, conditionType,
+	)
 }
